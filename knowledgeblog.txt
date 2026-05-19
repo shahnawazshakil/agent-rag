@@ -1,0 +1,230 @@
+Understanding Vector Embeddings, Semantic Search and Its Implementation
+Imran Khan
+Imran Khan
+
+Follow
+7 min read
+·
+May 25, 2025
+64
+
+
+1
+
+
+
+A vector embedding converts data — such as text, images, or audio — into a numerical representation (a high-dimensional vector, e.g., a 1,256-dimensional array) that captures its semantic meaning.
+
+Before diving into the details, let’s first understand what a vector is, how it works conceptually, and how it applies to embeddings. Then, we’ll walk through the step-by-step process of how vector embeddings function, followed by a practical implementation in Python.
+
+This blog is divided into four major parts:
+
+Understanding Vectors Understanding Semantic Relationships Through Vector Embeddings
+A conceptual overview of what vectors are and how they represent information.
+Usage of Vector Embedding
+Process Details — How Vector Embeddings Work (Step by Step)
+A breakdown of how embeddings are created, stored, and used in applications like semantic search.
+Python Implementation
+A hands-on guide to implementing vector embeddings using Python and popular libraries like LangChain and FAISS.
+Use earlier created Vector store.
+Delete Created vector store.
+1. Understanding Vector and Semantic Relationships:
+
+The image is a visual representation of a vector space model, likely used to illustrate semantic relationships between words. The central point represents a neutral or undefined state. From this point, vectors radiate outward to different terms representing demographic categories (Man, Woman, Boy, Girl, Old, Infant, Child). The positioning and direction of these vectors suggest relationships and potential axes of differentiation.
+
+Here’s a breakdown based on vector embedding concepts:
+
+Dimensions: The model appears to use at least two dimensions (though more dimensions could be conceptually inferred): Gender (Man/Woman, Boy/Girl) and Age (Old/Infant, Child). These are not orthogonal, as the age dimension can be interpreted as crossing the gender dimensions.
+Vector Representation: Each word is represented by a vector originating from the center. The length or direction of the vector could represent the magnitude or direction of the semantic relationship to the central point (which is undefined).
+Semantic Relationships: The arrows indicate relationships between the words. For instance, “Man” is opposite “Woman,” “Old” is opposite “Infant,” and so forth. The placement suggests antonyms or contrasting concepts.
+Limitations: The model is simplified. Real-world word embeddings are far more complex and multidimensional, capturing nuances of meaning beyond simple binary oppositions. The model doesn’t show relationships between non-opposite terms (e.g., the relationship between “Man” and “Boy” isn’t explicitly shown). Additionally, “His” and “Her” represent possessive pronouns tied to gender, but are not precisely placed along the gender axis.
+In summary, the image provides a basic, two-dimensional visualization of a vector space model. While illustrative, it’s a simplified representation of the complexities inherent in representing semantic relationships computationally. It effectively demonstrates the core concept of word vectors representing words as points in a space, with closer distances reflecting relationships.
+
+2. Usage of Vector Embedding
+Vector embeddings are foundational to modern AI systems. Below are some of the major usages across AI:
+
+Semantic Search
+Convert user query and documents into vectors.
+Natural Language Processing (NLP)
+LLM-Based Applications → e.g. ChatGPT + RAG
+Multimodal AI → Models like CLIP generate image and text embeddings in the same space.
+3. Process Details — How Vector Embeddings Work (Step by Step)
+Below is the overall process to create and store vector embeddings to perform search in detail:
+
+Press enter or click to view image in full size
+
+Vector search transforms data such as text, images or audio into numerical vector embeddings using machine learning models.
+
+Step1: Load required code modules to work with Vector embedding and search.
+
+Step2: Load data text, images or audio with the help of document, sentence and paragraph.
+
+Step3: Imports a module to split large documents / sentence/ paragraph into smaller chunks by character length. Splitting is essential because LLMs and embedding models have token limits.
+
+Get Imran Khan’s stories in your inbox
+Join Medium for free to get updates from this writer.
+
+Enter your email
+Subscribe
+
+Remember me for faster sign in
+
+Step4: Creates an instance of OpenAI’s embedding model It will be used to convert each text chunk into a vector.
+
+Step5: Imports the embedding model wrapper for OpenAI. This is used to convert text into high-dimensional vectors (embeddings) using OpenAI’s model like text-embedding-ada-002.
+
+Step6: Store vectors into Vector database like Chroma, FIASS, Pinecone, etc.
+
+Step7: Submit a query, which will also get converted into a vector, and the system compares it to stored vectors using similarity metrics like cosine similarity or Euclidean distance.
+
+The most similar vectors — called nearest neighbors — are returned as results, enabling a search based on meaning and intent rather than exact keyword matches.
+
+4. Implementation
+As part of our implementation, we will write a code to load a custom document, splits it into chunks, generates vector embeddings using OpenAI, and stores them in a FAISS vector store (we can used Chrome and Pinecone too) for semantic search.
+
+We will be using a RetrievalQA chain to answer user queries by retrieving relevant chunks and generating answers via an OpenAI language model.
+
+Press enter or click to view image in full size
+
+Follow below steps:
+
+Create a custom text file for data:
+Press enter or click to view image in full size
+
+2. Create vector.py python fie and we can give any custom name.
+
+Refer to the code and its accompanying comments for clearer understanding.
+
+# FAISS vector store from LangChain for storing and searching document embeddings
+from langchain.vectorstores import FAISS
+
+# OpenAI embeddings to convert text into high-dimensional vectors
+from langchain.embeddings.openai import OpenAIEmbeddings
+
+# Import a simple text splitter that splits large text into manageable chunks
+from langchain.text_splitter import CharacterTextSplitter
+
+# Import a loader to read plain text document, we can 
+# use PyPDFLoader for PDF and PandasExcelLoader for excel
+from langchain.document_loaders import TextLoader
+
+# Import the RetrievalQA chain to combine vector search with question-answering
+from langchain.chains import RetrievalQA
+
+# Import the OpenAI LLM wrapper to generate answers from retrieved documents
+from langchain.llms import OpenAI
+
+# Load environment variables from a .env file (e.g., API keys)
+from dotenv import load_dotenv
+
+# Built-in Python module to access environment variables
+import os
+
+# Load document having detail
+loader = TextLoader("test.txt")  # or PDF/CSV loader
+documents = loader.load()
+
+# Create an instance of the CharacterTextSplitter with specified chunk size and overlap
+# This splitter breaks large text into smaller chunks of 500 characters with a 50-character overlap
+text_splitter = CharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+
+# Apply the text splitter to the loaded documents
+# This returns a list of smaller, manageable text chunks that can be used for embedding
+docs = text_splitter.split_documents(documents)
+
+# Load Open API Key from .env environement variable
+load_dotenv()
+api_key = os.getenv("OPENAI_API_KEY")
+
+# Generate embeddings using Open API Key
+embedding_model = OpenAIEmbeddings(openai_api_key=api_key)
+
+# Create vector store
+vectorstore = FAISS.from_documents(docs, embedding_model)
+
+# Save locally using FIASS
+vectorstore.save_local("faiss_index")
+
+retrievalQueryChain = RetrievalQA.from_chain_type(
+    llm=OpenAI(),  # Or ChatOpenAI() if using GPT-4-turbo
+    retriever=vectorstore.as_retriever(k=3)
+)
+
+# Run a query through the RetrievalQA chain to get an answer based on the embedded documents
+result = retrievalQueryChain.run("What is the name of programmar in one word?")
+print(result)
+
+result = retrievalQueryChain.run("How many years of experience imran having")
+print(result)
+3. Execute below commands in command prompt to install Python modules:
+
+pip install langchain-openai
+pip install faiss-cpu
+pip install python-dotenv
+pip install -U langchain-community
+5. execute command: py vector.py
+
+6. OUTPUT:
+
+Press enter or click to view image in full size
+
+It will also create below vector store named as faiss_index.
+
+Press enter or click to view image in full size
+
+Load Content From Earlier Created Vector Store in Place Of directly Text File
+The code loads a saved FAISS vector store names as faiss_index, sets up a retrieval-based QA system using OpenAI embeddings and language models, and runs queries to get answers from the stored documents.
+
+from langchain.vectorstores import FAISS
+from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.chains import RetrievalQA
+from langchain.llms import OpenAI
+from dotenv import load_dotenv
+import os
+
+
+load_dotenv()
+api_key = os.getenv("OPENAI_API_KEY")
+
+# Create an embedding model instance using the OpenAI API key
+embedding_model = OpenAIEmbeddings(openai_api_key=api_key)
+
+# Load the FAISS vector store from the local directory using the same embedding model
+# Note: `allow_dangerous_deserialization=True` should only be used if you trust the source
+vectorstore = FAISS.load_local("faiss_index", embeddings=embedding_model, allow_dangerous_deserialization=True)
+
+# Convert the vector store into a retriever that can be used for semantic search
+retriever = vectorstore.as_retriever()
+
+
+retrievalQueryChain = RetrievalQA.from_chain_type(
+    llm=OpenAI(),
+    retriever=retriever
+)
+
+
+result = retrievalQueryChain.run("What is the name of programmar in one word?")
+print(result)
+
+result = retrievalQueryChain.run("How many years of experience imran having")
+print(result)
+Execute command in command prompt: py vector.py
+
+OUTPUT:
+
+Press enter or click to view image in full size
+
+Delete Vector
+Use below inline code snippet to delete a FAISS vector store. It will remove the directory as a whole including content file system inside it.
+
+import shutil
+
+# Path to the FAISS vector store directory
+folder_path = "faiss_index"
+
+# Delete the folder and all its contents
+shutil.rmtree(folder_path)
+I hope you found out this article interesting and informative. Please share it with your friends to spread the knowledge.
+
+You can follow me for upcoming blogs follow.
+Thank you!
